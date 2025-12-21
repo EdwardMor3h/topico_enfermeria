@@ -1,0 +1,24 @@
+# Dependencias
+node_modules/
+
+# Build Angular
+dist/
+.angular/
+
+# Variables de entorno
+.env
+
+# Prisma
+/generated/prisma
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Editor
+.vscode/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db

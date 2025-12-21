@@ -1,0 +1,138 @@
+<div class="container">
+  
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <h2>💰 Gestión de Ventas</h2>
+      <p class="subtitle">Registro de ventas y movimientos de inventario</p>
+    </div>
+    <button class="btn-primary" (click)="createSale()">
+      ➕ Nueva Venta
+    </button>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-icon">📊</div>
+      <div class="kpi-content">
+        <p class="kpi-value">{{ filteredSales.length }}</p>
+        <p class="kpi-label">Total Ventas</p>
+      </div>
+    </div>
+
+    <div class="kpi-card success">
+      <div class="kpi-icon">💵</div>
+      <div class="kpi-content">
+        <p class="kpi-value">{{ formatPrice(getTotalSales()) }}</p>
+        <p class="kpi-label">Ventas Totales</p>
+      </div>
+    </div>
+
+    <div class="kpi-card info">
+      <div class="kpi-icon">📅</div>
+      <div class="kpi-content">
+        <p class="kpi-value">{{ formatPrice(getTodaySales()) }}</p>
+        <p class="kpi-label">Ventas de Hoy</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Búsqueda -->
+  <div class="search-card">
+    <input 
+      type="text" 
+      [(ngModel)]="searchTerm"
+      (ngModelChange)="onSearchChange()"
+      placeholder="🔍 Buscar por paciente, DNI o método de pago..."
+      class="search-input"
+    />
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Cargando ventas...</p>
+  </div>
+
+  <!-- Sin resultados -->
+  <div *ngIf="!loading && filteredSales.length === 0" class="empty-state">
+    <div class="empty-icon">💰</div>
+    <h3>No se encontraron ventas</h3>
+    <p>Registra tu primera venta usando el botón "Nueva Venta"</p>
+  </div>
+
+  <!-- Tabla de ventas -->
+  <div *ngIf="!loading && filteredSales.length > 0" class="table-container">
+    <table class="sales-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Fecha</th>
+          <th>Cliente</th>
+          <th>Productos</th>
+          <th>Método de Pago</th>
+          <th>Total</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let sale of filteredSales; let i = index">
+          
+          <!-- ID -->
+          <td>
+            <span class="sale-id">#{{ sale.id }}</span>
+          </td>
+
+          <!-- Fecha -->
+          <td>
+            <span class="sale-date">{{ formatDate(sale.created_at) }}</span>
+          </td>
+
+          <!-- Cliente -->
+          <td>
+            <div class="patient-info">
+              <p class="patient-name">{{ getCustomerName(sale) }}</p>
+              <p class="patient-dni">DNI: {{ getCustomerDni(sale) }}</p>
+            </div>
+          </td>
+
+          <!-- Productos -->
+          <td>
+            <div class="products-list">
+              <div *ngFor="let detail of sale.details" class="product-item">
+                <span class="product-name">{{ detail.medicalSupply?.name }}</span>
+                <span class="product-qty">x{{ detail.quantity }}</span>
+              </div>
+            </div>
+          </td>
+
+          <!-- Método de Pago -->
+          <td>
+            <span class="payment-badge" [ngClass]="getPaymentClass(sale.payment)">
+              {{ getPaymentLabel(sale.payment) }}
+            </span>
+          </td>
+
+          <!-- Total -->
+          <td>
+            <span class="sale-total">{{ formatPrice(sale.total) }}</span>
+          </td>
+
+          <!-- Acciones -->
+          <td>
+            <button 
+              class="btn-view"
+              (click)="viewDetails(sale)"
+              title="Ver detalles"
+            >
+              👁️
+            </button>
+          </td>
+
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>

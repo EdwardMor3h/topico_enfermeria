@@ -1,0 +1,271 @@
+// ------------------------------------------
+// Prisma Schema – Sistema Tópico M&R
+// ------------------------------------------
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/**
+ * ===========================
+ * USUARIOS DEL SISTEMA
+ * ===========================
+ */
+model User {
+  id            Int      @id @default(autoincrement())
+  full_name     String
+  email         String   @unique
+  password_hash String
+  role          UserRole @default(DOCTOR)
+
+  signature     String?  // Firma del médico
+
+  failed_attempts Int       @default(0)
+  locked_until    DateTime?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  // Relaciones
+  consultations   Consultation[]
+  procedures      ProcedureRecord[]
+  clinicalRecords ClinicalHistory[]
+
+  auditLogs AuditLog[]   // ⬅️ RELACIÓN NECESARIA PARA AUDITORÍA
+}
+
+enum UserRole {
+  ADMIN
+  DOCTOR
+  NURSE
+}
+
+/**
+ * ===========================
+ * PACIENTES
+ * ===========================
+ */
+model Patient {
+  id          Int     @id @default(autoincrement())
+  dni         String  @unique
+  first_name  String
+  last_name   String
+  age         Int?
+  phone       String?
+  address     String?
+  antecedents String?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  appointments      Appointment[]
+  consultations     Consultation[]
+  clinicalHistories ClinicalHistory[]
+  procedureRecords  ProcedureRecord[]
+  sales             Sale[]
+}
+
+/**
+ * ===========================
+ * CITAS
+ * ===========================
+ */
+model Appointment {
+  id         Int               @id @default(autoincrement())
+  patient_id Int
+  date       DateTime
+  status     AppointmentStatus @default(SCHEDULED)
+  reason     String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  patient Patient @relation(fields: [patient_id], references: [id])
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  ATTENDED
+  CANCELLED
+}
+
+/**
+ * ===========================
+ * CONSULTAS MÉDICAS
+ * ===========================
+ */
+model Consultation {
+  id         Int @id @default(autoincrement())
+  patient_id Int
+  doctor_id  Int
+  
+  diagnosis    String
+  observations String?
+  treatment    String?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  patient Patient @relation(fields: [patient_id], references: [id])
+  doctor  User    @relation(fields: [doctor_id], references: [id])
+
+  clinicalHistory ClinicalHistory?
+}
+
+/**
+ * ===========================
+ * HISTORIA CLÍNICA REAL
+ * ===========================
+ */
+model ClinicalHistory {
+  id Int @id @default(autoincrement())
+
+  consultation_id Int @unique
+  patient_id      Int
+  doctor_id       Int
+
+  blood_pressure    String?
+  heart_rate        Int?
+  respiratory_rate  Int?
+  temperature       Float?
+  weight            Float?
+  oxygen_saturation Float?
+
+  diagnosis         String?
+  medical_signature String?
+
+  created_at DateTime @default(now())
+
+  consultation Consultation @relation(fields: [consultation_id], references: [id])
+  patient      Patient      @relation(fields: [patient_id], references: [id])
+  doctor       User         @relation(fields: [doctor_id], references: [id])
+}
+
+/**
+ * ===========================
+ * PROCEDIMIENTOS
+ * ===========================
+ */
+model Procedure {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String?
+  cost        Float
+
+  created_at DateTime @default(now())
+
+  records ProcedureRecord[]
+}
+
+model ProcedureRecord {
+  id           Int      @id @default(autoincrement())
+  patient_id   Int
+  procedure_id Int
+  user_id      Int
+  date         DateTime
+  observations String?
+
+  patient   Patient   @relation(fields: [patient_id], references: [id])
+  procedure Procedure @relation(fields: [procedure_id], references: [id])
+  user      User      @relation(fields: [user_id], references: [id])
+}
+
+/**
+ * ===========================
+ * INSUMOS / MEDICAMENTOS
+ * ===========================
+ */
+model MedicalSupply {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  stock       Int       @default(0)
+  unit_price  Float
+  expiration  DateTime?
+  supplier    String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  saleDetails SaleDetail[]
+}
+
+model Sale {
+  id            Int           @id @default(autoincrement())
+  patient_id    Int?          
+  customer_name String?       
+  customer_dni  String?       
+  total         Float
+  payment       PaymentMethod
+  created_at    DateTime      @default(now())
+  
+  patient Patient?     @relation(fields: [patient_id], references: [id])
+  details SaleDetail[]
+}
+
+model SaleDetail {
+  id               Int   @id @default(autoincrement())
+  sale_id          Int
+  medicalSupply_id Int
+  quantity         Int
+  unit_price       Float
+  subtotal         Float
+  
+  sale          Sale          @relation(fields: [sale_id], references: [id])
+  medicalSupply MedicalSupply @relation(fields: [medicalSupply_id], references: [id])
+}
+
+enum PaymentMethod {
+  CASH      // Efectivo
+  CARD      // Tarjeta
+  YAPE
+  PLIN
+  TRANSFER  // Transferencia
+}
+
+/**
+ * ===========================
+ * ALERTAS
+ * ===========================
+ */
+model Alert {
+  id      Int        @id @default(autoincrement())
+  message String
+  level   AlertLevel
+
+  created_at DateTime @default(now())
+}
+
+enum AlertLevel {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+/**
+ * ===========================
+ * LOGS DE AUDITORÍA
+ * ===========================
+ */
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  user_id   Int?
+  action    String
+  entity    String  
+  entity_id Int?
+  ip        String?
+  user_agent String?
+
+  created_at DateTime @default(now())
+
+  user User? @relation(fields: [user_id], references: [id])
+}

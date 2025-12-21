@@ -1,0 +1,286 @@
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4 md:p-6">
+  
+  <!-- Header con Saludo -->
+  <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-800">
+          {{ getGreeting() }}, Dr. {{ doctorName.split(' ')[0] }}
+        </h1>
+        <p class="text-gray-600 mt-2">
+          📅 {{ currentDate | date:'EEEE, d MMMM yyyy' }}
+        </p>
+      </div>
+      <button 
+        (click)="refresh()"
+        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+        <span>🔄</span> Actualizar
+      </button>
+    </div>
+  </div>
+
+  <!-- Mensaje de Error -->
+  <div *ngIf="errorMsg" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+    ⚠️ {{ errorMsg }}
+  </div>
+
+  <!-- KPIs del Doctor -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    
+    <!-- Citas de Hoy -->
+    <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm opacity-90">Citas Hoy</p>
+          <h2 class="text-4xl font-bold mt-2">
+            <span *ngIf="!loading">{{ stats.todayAppointments }}</span>
+            <span *ngIf="loading" class="animate-pulse">-</span>
+          </h2>
+        </div>
+        <div class="text-5xl opacity-80">📅</div>
+      </div>
+    </div>
+
+    <!-- Consultas Realizadas Hoy -->
+    <div class="bg-gradient-to-br from-green-500 to-green-600 text-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm opacity-90">Consultas Hoy</p>
+          <h2 class="text-4xl font-bold mt-2">
+            <span *ngIf="!loading">{{ stats.todayConsultations }}</span>
+            <span *ngIf="loading" class="animate-pulse">-</span>
+          </h2>
+        </div>
+        <div class="text-5xl opacity-80">🩺</div>
+      </div>
+    </div>
+
+    <!-- Citas Pendientes -->
+    <div class="bg-gradient-to-br from-orange-500 to-orange-600 text-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm opacity-90">Pendientes</p>
+          <h2 class="text-4xl font-bold mt-2">
+            <span *ngIf="!loading">{{ stats.pendingAppointments }}</span>
+            <span *ngIf="loading" class="animate-pulse">-</span>
+          </h2>
+        </div>
+        <div class="text-5xl opacity-80">⏰</div>
+      </div>
+    </div>
+
+    <!-- Total Pacientes Atendidos -->
+    <div class="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm opacity-90">Mis Pacientes</p>
+          <h2 class="text-4xl font-bold mt-2">
+            <span *ngIf="!loading">{{ stats.totalPatients }}</span>
+            <span *ngIf="loading" class="animate-pulse">-</span>
+          </h2>
+        </div>
+        <div class="text-5xl opacity-80">👥</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Accesos Rápidos -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    
+    <button 
+      routerLink="/appointments"
+      class="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105 text-center group">
+      <div class="text-4xl mb-3 group-hover:scale-110 transition-transform">📋</div>
+      <p class="font-semibold text-gray-800">Citas</p>
+      <p class="text-xs text-gray-600 mt-1">Gestionar citas</p>
+    </button>
+
+    <button 
+      routerLink="/consultations"
+      class="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105 text-center group">
+      <div class="text-4xl mb-3 group-hover:scale-110 transition-transform">🩺</div>
+      <p class="font-semibold text-gray-800">Consultas</p>
+      <p class="text-xs text-gray-600 mt-1">Atender pacientes</p>
+    </button>
+
+    <button 
+      routerLink="/patients"
+      class="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105 text-center group">
+      <div class="text-4xl mb-3 group-hover:scale-110 transition-transform">👤</div>
+      <p class="font-semibold text-gray-800">Pacientes</p>
+      <p class="text-xs text-gray-600 mt-1">Ver expedientes</p>
+    </button>
+
+    <button 
+      routerLink="/procedures"
+      class="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105 text-center group">
+      <div class="text-4xl mb-3 group-hover:scale-110 transition-transform">💉</div>
+      <p class="font-semibold text-gray-800">Procedimientos</p>
+      <p class="text-xs text-gray-600 mt-1">Registrar</p>
+    </button>
+
+  </div>
+
+  <!-- Contenido Principal -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    
+    <!-- Citas del Día -->
+    <div class="bg-white rounded-xl shadow-lg p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+          📅 Citas de Hoy
+        </h3>
+        <button 
+          routerLink="/appointments"
+          class="text-sm text-blue-600 hover:text-blue-700 hover:underline">
+          Ver todas →
+        </button>
+      </div>
+
+      <!-- Loading -->
+      <div *ngIf="loadingAppointments" class="text-center py-8">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
+        <p class="text-gray-600 mt-2 text-sm">Cargando citas...</p>
+      </div>
+
+      <!-- Sin Citas -->
+      <div *ngIf="!loadingAppointments && todayAppointments.length === 0" 
+           class="text-center py-12">
+        <div class="text-6xl mb-4">📭</div>
+        <p class="text-gray-600">No tienes citas programadas para hoy</p>
+        <button 
+          routerLink="/appointments"
+          class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          Ver todas las citas
+        </button>
+      </div>
+
+      <!-- Lista de Citas -->
+      <div *ngIf="!loadingAppointments && todayAppointments.length > 0" 
+           class="space-y-3 max-h-96 overflow-y-auto">
+        <div *ngFor="let appointment of todayAppointments" 
+             class="border-l-4 pl-4 py-3 hover:bg-gray-50 rounded-r transition-colors"
+             [ngClass]="{
+               'border-blue-500': appointment.status === 'SCHEDULED',
+               'border-green-500': appointment.status === 'ATTENDED',
+               'border-red-500': appointment.status === 'CANCELLED'
+             }">
+          
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <p class="font-semibold text-gray-800">
+                {{ appointment.patient.first_name }} {{ appointment.patient.last_name }}
+              </p>
+              <p class="text-sm text-gray-600">DNI: {{ appointment.patient.dni }}</p>
+              <p class="text-sm text-gray-700 mt-1">
+                <span class="font-medium">Motivo:</span> {{ appointment.reason || 'No especificado' }}
+              </p>
+            </div>
+            <div class="text-right">
+              <p class="text-lg font-bold text-blue-600">
+                {{ formatTime(appointment.date) }}
+              </p>
+              <span class="inline-block px-2 py-1 rounded-full text-xs font-semibold mt-1"
+                    [ngClass]="getStatusColor(appointment.status)">
+                {{ getStatusText(appointment.status) }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Botón de Atender -->
+          <button 
+            *ngIf="appointment.status === 'SCHEDULED'"
+            routerLink="/consultations/new"
+            [queryParams]="{patientId: appointment.patient.id, appointmentId: appointment.id}"
+            class="mt-2 w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold">
+            🩺 Atender Ahora
+          </button>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Consultas Recientes -->
+    <div class="bg-white rounded-xl shadow-lg p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+          🩺 Consultas Recientes
+        </h3>
+        <button 
+          routerLink="/consultations"
+          class="text-sm text-blue-600 hover:text-blue-700 hover:underline">
+          Ver todas →
+        </button>
+      </div>
+
+      <!-- Loading -->
+      <div *ngIf="loadingConsultations" class="text-center py-8">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-green-500 border-t-transparent"></div>
+        <p class="text-gray-600 mt-2 text-sm">Cargando consultas...</p>
+      </div>
+
+      <!-- Sin Consultas -->
+      <div *ngIf="!loadingConsultations && recentConsultations.length === 0" 
+           class="text-center py-12">
+        <div class="text-6xl mb-4">📋</div>
+        <p class="text-gray-600">No hay consultas recientes</p>
+      </div>
+
+      <!-- Lista de Consultas -->
+      <div *ngIf="!loadingConsultations && recentConsultations.length > 0" 
+           class="space-y-3 max-h-96 overflow-y-auto">
+        <div *ngFor="let consultation of recentConsultations" 
+             class="border-l-4 border-green-500 pl-4 py-3 hover:bg-gray-50 rounded-r transition-colors">
+          
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <p class="font-semibold text-gray-800">
+                {{ consultation.patient.first_name }} {{ consultation.patient.last_name }}
+              </p>
+              <p class="text-sm text-gray-700 mt-1">
+                <span class="font-medium">Diagnóstico:</span> {{ consultation.diagnosis }}
+              </p>
+            </div>
+            <div class="text-right text-xs text-gray-600">
+              {{ formatDate(consultation.created_at) }}
+            </div>
+          </div>
+
+          <button 
+            routerLink="/consultations"
+            [queryParams]="{id: consultation.id}"
+            class="mt-2 text-sm text-blue-600 hover:text-blue-700 hover:underline">
+            Ver detalles →
+          </button>
+
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Recordatorios/Tips -->
+  <div class="mt-6 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl shadow-lg p-6">
+    <h3 class="text-lg font-bold mb-3 flex items-center gap-2">
+      💡 Recordatorios
+    </h3>
+    <ul class="space-y-2 text-sm">
+      <li class="flex items-start gap-2">
+        <span class="mt-1">✓</span>
+        <span>Registra los signos vitales de cada paciente</span>
+      </li>
+      <li class="flex items-start gap-2">
+        <span class="mt-1">✓</span>
+        <span>No olvides firmar las historias clínicas</span>
+      </li>
+      <li class="flex items-start gap-2">
+        <span class="mt-1">✓</span>
+        <span>Actualiza el estado de las citas atendidas</span>
+      </li>
+    </ul>
+  </div>
+
+</div>

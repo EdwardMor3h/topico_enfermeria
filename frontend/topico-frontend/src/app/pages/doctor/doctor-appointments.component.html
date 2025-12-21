@@ -1,0 +1,39 @@
+<h1 class="text-2xl font-semibold mb-4">Citas Pendientes del Día</h1>
+
+<!-- Estado de carga -->
+<div *ngIf="loading" class="text-gray-600">Cargando...</div>
+
+<!-- Tabla de citas -->
+<table *ngIf="!loading && appointments.length" class="w-full bg-white shadow rounded">
+  <thead>
+    <tr class="text-left border-b">
+      <th class="p-2">Paciente</th>
+      <th class="p-2">Hora</th>
+      <th class="p-2">Motivo</th>
+      <th class="p-2">Acción</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let a of appointments" class="border-b hover:bg-gray-50 transition">
+      <td class="p-2">{{ a.patient.first_name }} {{ a.patient.last_name }}</td>
+      <td class="p-2">{{ a.date | date:'shortTime' }}</td>
+      <td class="p-2">{{ a.reason }}</td>
+      <td class="p-2">
+        <button 
+          class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
+          [routerLink]="['/doctor/consultation', a.id]"
+        >
+          Atender
+        </button>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Mensaje cuando no hay citas -->
+<div 
+  *ngIf="!loading && !appointments.length" 
+  class="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded text-center"
+>
+  <p class="text-lg">✅ No hay citas pendientes para hoy</p>
+</div>

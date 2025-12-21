@@ -1,0 +1,208 @@
+<div class="container">
+  
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <h2>📦 Gestión de Inventario</h2>
+      <p class="subtitle">Administra medicamentos y suministros médicos</p>
+    </div>
+    <button class="btn-primary" (click)="createSupply()">
+      ➕ Nuevo Suministro
+    </button>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-icon">📊</div>
+      <div class="kpi-content">
+        <p class="kpi-value">{{ filteredSupplies.length }}</p>
+        <p class="kpi-label">Total Productos</p>
+      </div>
+    </div>
+
+    <div class="kpi-card warning" *ngIf="getLowStockCount() > 0">
+      <div class="kpi-icon">⚠️</div>
+      <div class="kpi-content">
+        <p class="kpi-value">{{ getLowStockCount() }}</p>
+        <p class="kpi-label">Stock Bajo</p>
+      </div>
+    </div>
+
+    <div class="kpi-card danger" *ngIf="getExpiredCount() > 0">
+      <div class="kpi-icon">❌</div>
+      <div class="kpi-content">
+        <p class="kpi-value">{{ getExpiredCount() }}</p>
+        <p class="kpi-label">Vencidos</p>
+      </div>
+    </div>
+
+    <div class="kpi-card info" *ngIf="getExpiringSoonCount() > 0">
+      <div class="kpi-icon">⏰</div>
+      <div class="kpi-content">
+        <p class="kpi-value">{{ getExpiringSoonCount() }}</p>
+        <p class="kpi-label">Por vencer (30 días)</p>
+      </div>
+    </div>
+
+    <div class="kpi-card success">
+      <div class="kpi-icon">💰</div>
+      <div class="kpi-content">
+        <p class="kpi-value">{{ formatPrice(getTotalValue()) }}</p>
+        <p class="kpi-label">Valor Total</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros y búsqueda -->
+  <div class="filters-card">
+    <div class="search-box">
+      <input 
+        type="text" 
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="onSearchChange()"
+        placeholder="🔍 Buscar por nombre, descripción o proveedor..."
+        class="search-input"
+      />
+    </div>
+
+    <div class="filter-buttons">
+      <button 
+        class="filter-btn"
+        [class.active]="filterOption === 'all'"
+        (click)="filterOption = 'all'; onFilterChange()"
+      >
+        Todos
+      </button>
+      <button 
+        class="filter-btn"
+        [class.active]="filterOption === 'low-stock'"
+        (click)="filterOption = 'low-stock'; onFilterChange()"
+      >
+        Stock Bajo
+      </button>
+      <button 
+        class="filter-btn"
+        [class.active]="filterOption === 'expiring-soon'"
+        (click)="filterOption = 'expiring-soon'; onFilterChange()"
+      >
+        Por Vencer
+      </button>
+      <button 
+        class="filter-btn"
+        [class.active]="filterOption === 'expired'"
+        (click)="filterOption = 'expired'; onFilterChange()"
+      >
+        Vencidos
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Cargando inventario...</p>
+  </div>
+
+  <!-- Sin resultados -->
+  <div *ngIf="!loading && filteredSupplies.length === 0" class="empty-state">
+    <div class="empty-icon">📦</div>
+    <h3>No se encontraron productos</h3>
+    <p>Intenta cambiar los filtros o crear un nuevo suministro</p>
+  </div>
+
+  <!-- Tabla de inventario -->
+  <div *ngIf="!loading && filteredSupplies.length > 0" class="table-container">
+    <table class="inventory-table">
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Stock</th>
+          <th>Precio Unit.</th>
+          <th>Valor Total</th>
+          <th>Proveedor</th>
+          <th>Vencimiento</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let supply of filteredSupplies" [class.row-expired]="isExpired(supply.expiration)">
+          
+          <!-- Producto -->
+          <td>
+            <div class="product-info">
+              <p class="product-name">{{ supply.name }}</p>
+              <p class="product-description">{{ supply.description || 'Sin descripción' }}</p>
+            </div>
+          </td>
+
+          <!-- Stock -->
+          <td>
+            <span class="stock-badge" [ngClass]="getStockClass(supply.stock)">
+              {{ supply.stock }} unidades
+            </span>
+          </td>
+
+          <!-- Precio -->
+          <td class="price-cell">
+            {{ formatPrice(supply.unit_price) }}
+          </td>
+
+          <!-- Valor Total -->
+          <td class="price-cell">
+            <strong>{{ formatPrice(supply.stock * supply.unit_price) }}</strong>
+          </td>
+
+          <!-- Proveedor -->
+          <td>
+            {{ supply.supplier || 'N/A' }}
+          </td>
+
+          <!-- Vencimiento -->
+          <td>
+            <div *ngIf="supply.expiration">
+              <p class="expiration-date">{{ supply.expiration | date:'dd/MM/yyyy' }}</p>
+              <p class="expiration-warning" *ngIf="isExpired(supply.expiration)">
+                ❌ Vencido
+              </p>
+              <p class="expiration-warning" *ngIf="isExpiringSoon(supply.expiration) && !isExpired(supply.expiration)">
+                ⚠️ Vence en {{ getDaysUntilExpiration(supply.expiration) }} días
+              </p>
+            </div>
+            <span *ngIf="!supply.expiration" class="text-muted">N/A</span>
+          </td>
+
+          <!-- Estado -->
+          <td>
+            <span class="status-badge" [ngClass]="getStockClass(supply.stock)">
+              {{ getStockLabel(supply.stock) }}
+            </span>
+          </td>
+
+          <!-- Acciones -->
+          <td>
+            <div class="action-buttons">
+              <button 
+                class="btn-edit" 
+                (click)="editSupply(supply.id)"
+                title="Editar"
+              >
+                ✏️
+              </button>
+              <button 
+                class="btn-delete" 
+                (click)="deleteSupply(supply)"
+                title="Eliminar"
+              >
+                🗑️
+              </button>
+            </div>
+          </td>
+
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>

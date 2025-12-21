@@ -1,0 +1,221 @@
+<div class="container">
+  <div class="card">
+    
+    <!-- Header -->
+    <div class="header">
+      <h2>🛒 Nueva Venta</h2>
+      <button class="btn-secondary" (click)="goBack()">
+        ← Volver
+      </button>
+    </div>
+
+    <form [formGroup]="saleForm" (ngSubmit)="onSubmit()">
+      
+      <!-- Tipo de Cliente -->
+      <div class="customer-type-section">
+        <label class="section-label">Tipo de Cliente</label>
+        <div class="radio-group">
+          <label class="radio-option">
+            <input 
+              type="radio" 
+              [(ngModel)]="customerType" 
+              [ngModelOptions]="{standalone: true}"
+              value="anonymous"
+              (change)="onCustomerTypeChange()"
+            />
+            <span>Cliente Anónimo / Público</span>
+          </label>
+          <label class="radio-option">
+            <input 
+              type="radio" 
+              [(ngModel)]="customerType"
+              [ngModelOptions]="{standalone: true}"
+              value="patient"
+              (change)="onCustomerTypeChange()"
+            />
+            <span>Paciente Registrado</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Datos del cliente -->
+      <div class="form-grid">
+        
+        <!-- Si es paciente registrado -->
+        <div class="form-group" *ngIf="customerType === 'patient'">
+          <label for="patient_id">Paciente *</label>
+          <select 
+            id="patient_id"
+            formControlName="patient_id"
+            class="form-control"
+          >
+            <option value="">Seleccionar paciente</option>
+            <option *ngFor="let patient of patients" [value]="patient.id">
+              {{ patient.first_name }} {{ patient.last_name }} - {{ patient.dni }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Si es cliente anónimo -->
+        <ng-container *ngIf="customerType === 'anonymous'">
+          <div class="form-group">
+            <label for="customer_name">Nombre del Cliente *</label>
+            <input 
+              type="text"
+              id="customer_name"
+              formControlName="customer_name"
+              placeholder="Ej: Juan Pérez"
+              class="form-control"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="customer_dni">DNI (opcional)</label>
+            <input 
+              type="text"
+              id="customer_dni"
+              formControlName="customer_dni"
+              placeholder="12345678"
+              maxlength="8"
+              class="form-control"
+            />
+          </div>
+        </ng-container>
+
+            <!-- Método de Pago -->
+            <div class="form-group">
+            <label for="payment">Método de Pago *</label>
+            <select 
+                id="payment"
+                formControlName="payment"
+                class="form-control"
+            >
+                <option value="CASH">💵 Efectivo</option>
+                <option value="CARD">💳 Tarjeta</option>
+                <option value="YAPE">📱 Yape</option>
+                <option value="PLIN">📱 Plin</option>
+                <option value="TRANSFER">🏦 Transferencia</option>
+            </select>
+            </div>
+
+      </div>
+
+      <!-- Detalle de productos -->
+      <div class="products-section">
+        <div class="section-header">
+          <h3>📦 Productos</h3>
+          <button 
+            type="button" 
+            class="btn-add"
+            (click)="addDetail()"
+          >
+            ➕ Agregar Producto
+          </button>
+        </div>
+
+        <div class="products-list" formArrayName="details">
+          
+          <div 
+            *ngFor="let detail of details.controls; let i = index"
+            [formGroupName]="i"
+            class="product-row"
+          >
+            
+            <div class="product-field product-select">
+              <label>Producto</label>
+              <select 
+                formControlName="medicalSupply_id"
+                (change)="onSupplyChange(i)"
+                class="form-control"
+              >
+                <option value="">Seleccionar</option>
+                <option *ngFor="let supply of supplies" [value]="supply.id">
+                  {{ supply.name }} (Stock: {{ supply.stock }})
+                </option>
+              </select>
+            </div>
+
+            <div class="product-field">
+              <label>Cantidad</label>
+              <input 
+                type="number"
+                formControlName="quantity"
+                (input)="onQuantityChange(i)"
+                min="1"
+                class="form-control"
+              />
+            </div>
+
+            <div class="product-field">
+              <label>Precio Unit.</label>
+              <input 
+                type="text"
+                formControlName="unit_price"
+                class="form-control"
+                readonly
+              />
+            </div>
+
+            <div class="product-field">
+              <label>Subtotal</label>
+              <input 
+                type="text"
+                formControlName="subtotal"
+                class="form-control"
+                readonly
+              />
+            </div>
+
+            <div class="product-field product-actions">
+              <label>&nbsp;</label>
+              <button 
+                type="button"
+                class="btn-remove"
+                (click)="removeDetail(i)"
+                [disabled]="details.length === 1"
+              >
+                🗑️
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Total -->
+      <div class="total-section">
+        <div class="total-row">
+          <span class="total-label">TOTAL A PAGAR:</span>
+          <span class="total-value">S/ {{ calculateTotal().toFixed(2) }}</span>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div *ngIf="errorMessage" class="alert alert-error">
+        ⚠️ {{ errorMessage }}
+      </div>
+
+      <!-- Botones -->
+      <div class="form-actions">
+        <button 
+          type="submit" 
+          class="btn-primary"
+          [disabled]="saleForm.invalid || details.length === 0 || loading"
+        >
+          <span *ngIf="!loading">✅ Registrar Venta</span>
+          <span *ngIf="loading">⏳ Procesando...</span>
+        </button>
+        <button 
+          type="button" 
+          class="btn-secondary"
+          (click)="goBack()"
+        >
+          Cancelar
+        </button>
+      </div>
+
+    </form>
+
+  </div>
+</div>

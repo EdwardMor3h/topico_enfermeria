@@ -1,0 +1,36 @@
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <h3>🏥 Panel Médico</h3>
+
+    <!-- ADMIN -->
+    <ng-container *ngIf="auth.hasRole(['ADMIN'])">
+      <a routerLink="/dashboard" routerLinkActive="active">📊 Dashboard</a>
+      <a routerLink="/patients" routerLinkActive="active">👥 Pacientes</a>
+      <a routerLink="/appointments" routerLinkActive="active">📅 Citas</a>
+      <a routerLink="/inventory" routerLinkActive="active">📦 Inventario</a>
+      <a routerLink="/sales" routerLinkActive="active">💰 Ventas</a>
+      <a routerLink="/reports" routerLinkActive="active">📈 Reportes</a>
+    </ng-container>
+
+    <!-- DOCTOR -->
+    <ng-container *ngIf="auth.hasRole(['DOCTOR'])">
+      <a routerLink="/doctor/dashboard" routerLinkActive="active">🏠 Mi Panel</a>
+      <a routerLink="/doctor/appointments" routerLinkActive="active">📅 Citas del día</a>
+    </ng-container>
+
+    <!-- NURSE -->
+    <ng-container *ngIf="auth.hasRole(['NURSE'])">
+      <a routerLink="/patients" routerLinkActive="active">👥 Pacientes</a>
+      <a routerLink="/appointments" routerLinkActive="active">📅 Citas</a>
+      <a routerLink="/sales" routerLinkActive="active">💰 Ventas</a>
+    </ng-container>
+
+    <button class="logout-btn" (click)="logout()">🚪 Cerrar sesión</button>
+  </aside>
+
+  <!-- CONTENIDO -->
+  <main class="content">
+    <router-outlet></router-outlet>
+  </main>
+</div>
