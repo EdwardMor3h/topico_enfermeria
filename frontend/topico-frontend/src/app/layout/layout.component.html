@@ -1,28 +1,43 @@
 <div class="layout">
+
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <h3>🏥 Panel Médico</h3>
+
+    <!-- INICIO (SOLO ADMIN Y NURSE) -->
+    <a *ngIf="auth.hasRole(['ADMIN','NURSE'])"
+       routerLink="/welcome"
+       routerLinkActive="active"
+       [routerLinkActiveOptions]="{ exact: true }">
+      🏠 Inicio
+    </a>
 
     <!-- ADMIN -->
     <ng-container *ngIf="auth.hasRole(['ADMIN'])">
       <a routerLink="/dashboard" routerLinkActive="active">📊 Dashboard</a>
       <a routerLink="/patients" routerLinkActive="active">👥 Pacientes</a>
       <a routerLink="/appointments" routerLinkActive="active">📅 Citas</a>
+      <a routerLink="/procedures" routerLinkActive="active">🩺 Procedimientos</a>
       <a routerLink="/inventory" routerLinkActive="active">📦 Inventario</a>
       <a routerLink="/sales" routerLinkActive="active">💰 Ventas</a>
-      <a routerLink="/reports" routerLinkActive="active">📈 Reportes</a>
     </ng-container>
 
     <!-- DOCTOR -->
     <ng-container *ngIf="auth.hasRole(['DOCTOR'])">
-      <a routerLink="/doctor/dashboard" routerLinkActive="active">🏠 Mi Panel</a>
-      <a routerLink="/doctor/appointments" routerLinkActive="active">📅 Citas del día</a>
+      <a routerLink="/doctor/appointments" routerLinkActive="active">
+        📅 Citas del día
+      </a>
+      <a routerLink="/patients" routerLinkActive="active">👥 Pacientes</a>
+      <a routerLink="/procedure-records" routerLinkActive="active">
+        🩺 Procedimientos
+      </a>
     </ng-container>
 
     <!-- NURSE -->
     <ng-container *ngIf="auth.hasRole(['NURSE'])">
       <a routerLink="/patients" routerLinkActive="active">👥 Pacientes</a>
       <a routerLink="/appointments" routerLinkActive="active">📅 Citas</a>
+      <a routerLink="/procedure-records" routerLinkActive="active">🩺 Procedimientos</a>
       <a routerLink="/sales" routerLinkActive="active">💰 Ventas</a>
     </ng-container>
 
@@ -33,4 +48,5 @@
   <main class="content">
     <router-outlet></router-outlet>
   </main>
+
 </div>

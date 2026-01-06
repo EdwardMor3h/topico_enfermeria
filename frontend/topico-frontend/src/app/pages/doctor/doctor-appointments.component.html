@@ -1,39 +1,362 @@
-<h1 class="text-2xl font-semibold mb-4">Citas Pendientes del Día</h1>
+<!-- doctor-appointments.component.html - CORREGIDO -->
+<div class="p-6">
+  <h1 class="text-2xl font-semibold mb-6 text-gray-800">Citas Pendientes del Día</h1>
 
-<!-- Estado de carga -->
-<div *ngIf="loading" class="text-gray-600">Cargando...</div>
+  <!-- Estado de carga -->
+  <div *ngIf="loading" class="flex items-center justify-center py-12">
+    <div class="text-center">
+      <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mb-4"></div>
+      <p class="text-gray-600">Cargando citas...</p>
+    </div>
+  </div>
 
-<!-- Tabla de citas -->
-<table *ngIf="!loading && appointments.length" class="w-full bg-white shadow rounded">
-  <thead>
-    <tr class="text-left border-b">
-      <th class="p-2">Paciente</th>
-      <th class="p-2">Hora</th>
-      <th class="p-2">Motivo</th>
-      <th class="p-2">Acción</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr *ngFor="let a of appointments" class="border-b hover:bg-gray-50 transition">
-      <td class="p-2">{{ a.patient.first_name }} {{ a.patient.last_name }}</td>
-      <td class="p-2">{{ a.date | date:'shortTime' }}</td>
-      <td class="p-2">{{ a.reason }}</td>
-      <td class="p-2">
+  <!-- Error -->
+  <div *ngIf="error" class="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg mb-4">
+    <div class="flex items-center">
+      <svg class="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+      <p class="text-red-600 font-medium">{{ error }}</p>
+    </div>
+  </div>
+
+  <!-- Tabla de citas -->
+  <div *ngIf="!loading && appointments.length" class="bg-white shadow-lg rounded-lg overflow-hidden">
+    <table class="w-full">
+      <thead class="bg-gradient-to-r from-teal-500 to-blue-600 text-white">
+        <tr class="text-left">
+          <th class="p-4 font-semibold">Paciente</th>
+          <th class="p-4 font-semibold">Hora</th>
+          <th class="p-4 font-semibold">Motivo</th>
+          <th class="p-4 font-semibold text-center">Signos Vitales</th>
+          <th class="p-4 font-semibold text-center">Acción</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200">
+        <tr *ngFor="let a of appointments" class="hover:bg-blue-50 transition">
+          
+          <!-- Paciente - ✅ CORREGIDO con ?. -->
+          <td class="p-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-gradient-to-br from-teal-400 to-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+                {{ a.patient?.first_name?.charAt(0) || 'P' }}
+              </div>
+              <div>
+                <p class="font-semibold text-gray-800">
+                  {{ a.patient?.first_name || 'N/A' }} {{ a.patient?.last_name || '' }}
+                </p>
+                <p class="text-xs text-gray-500 font-mono">DNI: {{ a.patient?.dni || 'N/A' }}</p>
+              </div>
+            </div>
+          </td>
+          
+          <!-- Hora -->
+          <td class="p-4">
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <span class="text-gray-700 font-medium">{{ a.date | date:'shortTime' }}</span>
+            </div>
+          </td>
+          
+          <!-- Motivo -->
+          <td class="p-4">
+            <span class="text-gray-700">{{ a.reason || 'Sin especificar' }}</span>
+          </td>
+          
+          <!-- Signos Vitales -->
+          <td class="p-4">
+            <div class="flex items-center justify-center">
+              <!-- Si tiene signos vitales -->
+              <button 
+                *ngIf="a.vitalSigns"
+                (click)="viewVitalSigns(a)"
+                class="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition text-sm font-medium flex items-center gap-2"
+                title="Ver signos vitales">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Ver Signos
+              </button>
+              
+              <!-- Si NO tiene signos vitales -->
+              <span 
+                *ngIf="!a.vitalSigns"
+                class="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-lg text-sm font-medium flex items-center gap-2"
+                title="Signos vitales pendientes">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+                Pendiente
+              </span>
+            </div>
+          </td>
+          
+          <!-- Acción -->
+          <td class="p-4">
+            <div class="flex justify-center">
+              <button 
+                class="px-6 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition font-medium shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                [routerLink]="['/doctor/consultation', a.id]">
+                Atender
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Mensaje cuando no hay citas -->
+  <div 
+    *ngIf="!loading && !appointments.length" 
+    class="bg-gradient-to-br from-blue-50 to-teal-50 border-2 border-blue-200 rounded-lg p-12 text-center">
+    <svg class="w-20 h-20 text-blue-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+    </svg>
+    <h3 class="text-2xl font-bold text-gray-700 mb-2">¡Todo al día!</h3>
+    <p class="text-lg text-gray-600">No hay citas pendientes para hoy</p>
+  </div>
+</div>
+
+<!-- MODAL: Ver Signos Vitales -->
+<div *ngIf="showVitalSignsModal" 
+     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+     (click)="closeVitalSignsModal()">
+  
+  <div class="bg-white rounded-lg shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+       (click)="$event.stopPropagation()">
+    
+    <!-- Header del Modal -->
+    <div class="sticky top-0 bg-gradient-to-r from-teal-500 to-blue-600 text-white p-6 rounded-t-lg">
+      <div class="flex items-center justify-between">
+        <div class="flex-1">
+          <h2 class="text-2xl font-bold">Signos Vitales</h2>
+          <p class="text-teal-100 mt-1 text-lg">
+            {{ selectedAppointment?.patient?.first_name || 'N/A' }} {{ selectedAppointment?.patient?.last_name || '' }}
+          </p>
+          <div class="flex gap-3 mt-2">
+            <span class="text-xs bg-white bg-opacity-20 px-3 py-1 rounded-full">
+              DNI: {{ selectedAppointment?.patient?.dni || 'N/A' }}
+            </span>
+            <span class="text-xs bg-white bg-opacity-20 px-3 py-1 rounded-full">
+              Edad: {{ selectedAppointment?.patient?.age || 'N/A' }} años
+            </span>
+          </div>
+        </div>
         <button 
-          class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
-          [routerLink]="['/doctor/consultation', a.id]"
-        >
-          Atender
+          (click)="closeVitalSignsModal()"
+          class="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
         </button>
-      </td>
-    </tr>
-  </tbody>
-</table>
+      </div>
+    </div>
 
-<!-- Mensaje cuando no hay citas -->
-<div 
-  *ngIf="!loading && !appointments.length" 
-  class="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded text-center"
->
-  <p class="text-lg">✅ No hay citas pendientes para hoy</p>
+    <!-- Contenido del Modal -->
+    <div class="p-6" *ngIf="selectedAppointment?.vitalSigns">
+      
+      <!-- Info de registro -->
+      <div class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded mb-6">
+        <p class="text-sm text-gray-700">
+          <strong>Registrado por:</strong> {{ selectedAppointment.vitalSigns.nurse?.full_name || 'N/A' }}
+          <span class="ml-4 text-gray-500">
+            {{ selectedAppointment.vitalSigns.created_at | date:'dd/MM/yyyy HH:mm' }}
+          </span>
+        </p>
+      </div>
+
+      <!-- Grid de Signos Vitales -->
+      <div class="grid grid-cols-2 gap-6">
+        
+        <!-- Presión Arterial -->
+        <div class="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg border border-red-200">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+              </svg>
+            </div>
+            <div>
+              <p class="text-xs text-gray-600 font-medium">Presión Arterial</p>
+              <p class="text-2xl font-bold text-gray-800">
+                {{ selectedAppointment.vitalSigns.blood_pressure || 'N/A' }}
+              </p>
+              <p class="text-xs text-gray-500">mmHg</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Frecuencia Cardíaca -->
+        <div class="bg-gradient-to-br from-pink-50 to-pink-100 p-4 rounded-lg border border-pink-200">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 bg-pink-500 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+              </svg>
+            </div>
+            <div>
+              <p class="text-xs text-gray-600 font-medium">Frecuencia Cardíaca</p>
+              <p class="text-2xl font-bold text-gray-800">
+                {{ selectedAppointment.vitalSigns.heart_rate || 'N/A' }}
+              </p>
+              <p class="text-xs text-gray-500">lpm</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Frecuencia Respiratoria -->
+        <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path>
+              </svg>
+            </div>
+            <div>
+              <p class="text-xs text-gray-600 font-medium">Frecuencia Respiratoria</p>
+              <p class="text-2xl font-bold text-gray-800">
+                {{ selectedAppointment.vitalSigns.respiratory_rate || 'N/A' }}
+              </p>
+              <p class="text-xs text-gray-500">rpm</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Temperatura -->
+        <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border border-orange-200">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+              </svg>
+            </div>
+            <div>
+              <p class="text-xs text-gray-600 font-medium">Temperatura</p>
+              <p class="text-2xl font-bold text-gray-800">
+                {{ selectedAppointment.vitalSigns.temperature || 'N/A' }}
+              </p>
+              <p class="text-xs text-gray-500">°C</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- SO2 -->
+        <div class="bg-gradient-to-br from-teal-50 to-teal-100 p-4 rounded-lg border border-teal-200">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 bg-teal-500 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+              </svg>
+            </div>
+            <div>
+              <p class="text-xs text-gray-600 font-medium">Saturación de O2</p>
+              <p class="text-2xl font-bold text-gray-800">
+                {{ selectedAppointment.vitalSigns.oxygen_saturation || 'N/A' }}
+              </p>
+              <p class="text-xs text-gray-500">%</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Peso -->
+        <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path>
+              </svg>
+            </div>
+            <div>
+              <p class="text-xs text-gray-600 font-medium">Peso</p>
+              <p class="text-2xl font-bold text-gray-800">
+                {{ selectedAppointment.vitalSigns.weight || 'N/A' }}
+              </p>
+              <p class="text-xs text-gray-500">kg</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Talla -->
+        <div class="bg-gradient-to-br from-indigo-50 to-indigo-100 p-4 rounded-lg border border-indigo-200">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 bg-indigo-500 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+              </svg>
+            </div>
+            <div>
+              <p class="text-xs text-gray-600 font-medium">Talla</p>
+              <p class="text-2xl font-bold text-gray-800">
+                {{ selectedAppointment.vitalSigns.height || 'N/A' }}
+              </p>
+              <p class="text-xs text-gray-500">cm</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- IMC (calculado) -->
+        <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 rounded-lg border border-yellow-200">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+              </svg>
+            </div>
+            <div>
+              <p class="text-xs text-gray-600 font-medium">IMC</p>
+              <p class="text-2xl font-bold text-gray-800">
+                {{ calculateBMI(selectedAppointment.vitalSigns.weight, selectedAppointment.vitalSigns.height) }}
+              </p>
+              <p class="text-xs text-gray-500">kg/m²</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Observaciones -->
+      <div *ngIf="selectedAppointment.vitalSigns.observations" 
+           class="mt-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+        <h3 class="text-sm font-semibold text-gray-700 mb-2">Observaciones:</h3>
+        <p class="text-gray-600">{{ selectedAppointment.vitalSigns.observations }}</p>
+      </div>
+
+      <!-- Antecedentes del paciente -->
+      <div *ngIf="selectedAppointment.patient?.antecedents" 
+           class="mt-4 bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+        <h3 class="text-sm font-semibold text-yellow-800 mb-2">⚠️ Antecedentes del Paciente:</h3>
+        <p class="text-gray-700">{{ selectedAppointment.patient.antecedents }}</p>
+      </div>
+
+      <!-- Botón de acción -->
+      <div class="mt-6 flex justify-end gap-3">
+        <button 
+          (click)="closeVitalSignsModal()"
+          class="px-6 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium">
+          Cerrar
+        </button>
+        <button 
+          [routerLink]="['/doctor/consultation', selectedAppointment?.id]"
+          (click)="closeVitalSignsModal()"
+          class="px-6 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition font-medium shadow-md hover:shadow-lg">
+          Atender Paciente
+        </button>
+      </div>
+    </div>
+  </div>
 </div>

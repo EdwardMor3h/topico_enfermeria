@@ -1,4 +1,4 @@
-<!-- patients.component.html -->
+<!-- patients.component.html - ACTUALIZADO -->
 <div class="p-6">
   
   <!-- Header -->
@@ -75,7 +75,7 @@
           <th class="p-4 font-semibold text-gray-700">Nombre</th>
           <th class="p-4 font-semibold text-gray-700">DNI</th>
           <th class="p-4 font-semibold text-gray-700">Teléfono</th>
-          <th class="p-4 font-semibold text-gray-700">Acciones</th>
+          <th class="p-4 font-semibold text-gray-700 text-center">Acciones</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-gray-200">
@@ -94,17 +94,41 @@
           </td>
           <td class="p-4 text-gray-700">{{ p.phone || 'N/A' }}</td>
           <td class="p-4">
-            <div class="flex items-center gap-2">
+            <div class="flex items-center justify-center gap-2">
+              
+              <!-- Botón de Editar -->
               <button 
-                class="px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition font-medium"
-                (click)="edit(p.id)">
-                Editar
+                class="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition"
+                (click)="edit(p.id)"
+                title="Editar paciente">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
               </button>
+
+              <!-- ⬅️ NUEVO: Botón de Historias Clínicas -->
               <button 
-                class="px-3 py-1.5 text-red-600 hover:bg-red-50 rounded-lg transition font-medium"
-                (click)="delete(p.id)">
-                Eliminar
+                class="p-2 text-green-600 hover:bg-green-100 rounded-lg transition"
+                (click)="viewClinicalHistories(p.id)"
+                title="Ver historias clínicas">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
               </button>
+
+              <!-- Botón de Eliminar -->
+              <button 
+                class="p-2 text-red-600 hover:bg-red-100 rounded-lg transition"
+                (click)="delete(p.id)"
+                title="Eliminar paciente">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+              </button>
+              
             </div>
           </td>
         </tr>

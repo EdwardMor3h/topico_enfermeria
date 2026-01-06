@@ -1,4 +1,5 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core'; // ✅ Importa ChangeDetectorRef
+// consultation-form.component.ts - ACTUALIZADO CON RECETA
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -18,6 +19,10 @@ export class ConsultationFormComponent implements OnInit {
   loadingAppointment = true;
   error = '';
   submitting = false;
+  
+  // ⬅️ NUEVO: Para manejar la receta
+  savedConsultationId: number | null = null;
+  showPrintButton = false;
 
   constructor(
     private fb: FormBuilder,
@@ -25,14 +30,10 @@ export class ConsultationFormComponent implements OnInit {
     private router: Router,
     private consultationsService: ConsultationsService,
     private appointmentsService: AppointmentsService,
-    private cdr: ChangeDetectorRef // ✅ Inyecta ChangeDetectorRef
-  ) {
-    console.log('🏗️ ConsultationFormComponent constructor');
-  }
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
-    console.log('🔄 ngOnInit ejecutado');
-    
     this.form = this.fb.group({
       diagnosis: ['', Validators.required],
       observations: [''],
@@ -40,46 +41,37 @@ export class ConsultationFormComponent implements OnInit {
     });
 
     const id = this.route.snapshot.paramMap.get('appointmentId');
-    console.log('📍 Parámetro appointmentId:', id);
-
+    
     if (id) {
       this.appointmentId = Number(id);
-      console.log('✅ appointmentId convertido a número:', this.appointmentId);
       this.loadAppointment();
     } else {
-      console.error('❌ No se encontró appointmentId en la URL');
       this.error = 'No se encontró el ID de la cita';
       this.loadingAppointment = false;
-      this.cdr.detectChanges(); // ✅ Forzar detección
+      this.cdr.detectChanges();
     }
   }
 
   loadAppointment() {
-    console.log('📥 Cargando cita con ID:', this.appointmentId);
     this.loadingAppointment = true;
     this.error = '';
 
     this.appointmentsService.getById(this.appointmentId).subscribe({
       next: (data) => {
-        console.log('✅ Cita cargada exitosamente:', data);
         this.appointment = data;
         this.loadingAppointment = false;
-        this.cdr.detectChanges(); // ✅ ESTO ES CLAVE - Forzar actualización de la vista
+        this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('❌ Error al cargar cita:', err);
         this.error = 'Error al cargar datos de la cita';
         this.loadingAppointment = false;
-        this.cdr.detectChanges(); // ✅ Forzar detección
+        this.cdr.detectChanges();
+        console.error(err);
       }
     });
   }
 
   submit() {
-    console.log('📤 Intentando enviar formulario');
-    console.log('📋 Estado del formulario:', this.form.value);
-    console.log('✔️ Formulario válido:', this.form.valid);
-
     if (this.form.invalid) {
       alert('Por favor complete todos los campos requeridos');
       return;
@@ -87,7 +79,6 @@ export class ConsultationFormComponent implements OnInit {
 
     this.submitting = true;
     this.error = '';
-    this.cdr.detectChanges(); // ✅ Forzar detección
 
     const payload = {
       patient_id: this.appointment.patient_id,
@@ -100,27 +91,102 @@ export class ConsultationFormComponent implements OnInit {
 
     this.consultationsService.create(payload).subscribe({
       next: (response) => {
-        console.log('✅ Consulta creada:', response);
+        console.log('✅ Respuesta completa del backend:', response);
         
+        // ⬅️ CORREGIDO: El ID está en response.consultation.id
+        this.savedConsultationId = response.consultation?.id || response.id;
+        console.log('💾 ID de consulta guardado:', this.savedConsultationId);
+        
+        // Verificar que existe clinicalHistory
+        if (!response || !response.clinicalHistory || !response.clinicalHistory.id) {
+          console.error('❌ ERROR: No se recibió clinicalHistory en la respuesta:', response);
+          alert('⚠️ Consulta guardada pero hubo un error con la historia clínica');
+          this.router.navigate(['/doctor/appointments']);
+          return;
+        }
+
+        const clinicalHistoryId = response.clinicalHistory.id;
+        console.log('🆔 ID de Historia Clínica obtenido:', clinicalHistoryId);
+        
+        // Actualizar estado de la cita
         this.appointmentsService.updateStatus(this.appointmentId, 'ATTENDED').subscribe({
           next: () => {
-            console.log('✅ Estado actualizado a ATTENDED');
-            alert('✅ Consulta registrada exitosamente');
-            this.router.navigate(['/doctor/appointments']);
+            console.log('✅ Estado de cita actualizado');
+            
+            // ⬅️ MODIFICADO: Preguntar si quiere imprimir receta ANTES de firmar
+            const wantToPrint = confirm(
+              '✅ Consulta registrada exitosamente.\n\n' +
+              '¿Desea imprimir la receta para el paciente AHORA?\n' +
+              '(Después deberá firmar la historia clínica)'
+            );
+            
+            if (wantToPrint) {
+              // Imprimir receta
+              this.printPrescription();
+              
+              // Esperar un momento y luego ir a firmar
+              setTimeout(() => {
+                alert('Ahora debe firmar la historia clínica (OBLIGATORIO)');
+                this.router.navigate(['/clinical-histories', clinicalHistoryId, 'sign']);
+              }, 1500);
+            } else {
+              // Ir directo a firmar
+              alert('Ahora debe firmar la historia clínica (OBLIGATORIO)');
+              this.router.navigate(['/clinical-histories', clinicalHistoryId, 'sign']);
+            }
           },
           error: (err) => {
             console.error('⚠️ Error actualizando estado:', err);
-            alert('⚠️ Consulta guardada, pero no se pudo actualizar el estado');
-            this.router.navigate(['/doctor/appointments']);
+            // Aún así navegar a la firma (es obligatorio)
+            alert('⚠️ Hubo un error pero debe firmar la historia clínica');
+            this.router.navigate(['/clinical-histories', clinicalHistoryId, 'sign']);
           }
         });
       },
       error: (err) => {
-        console.error('❌ Error guardando consulta:', err);
-        this.error = 'Error al guardar la consulta';
+        console.error('❌ Error creando consulta:', err);
+        this.error = err.error?.error || 'Error al guardar la consulta';
         this.submitting = false;
-        this.cdr.detectChanges(); // ✅ Forzar detección
-        alert('❌ Error al guardar la consulta');
+        this.cdr.detectChanges();
+        alert('❌ ' + this.error);
+      }
+    });
+  }
+
+  /**
+   * 🖨️ Imprimir receta médica
+   */
+  printPrescription() {
+    if (!this.savedConsultationId) {
+      alert('❌ No hay consulta guardada');
+      return;
+    }
+    
+    console.log('📄 Descargando receta para consulta:', this.savedConsultationId);
+    
+    this.consultationsService.downloadPrescription(this.savedConsultationId).subscribe({
+      next: (blob) => {
+        // Crear URL del blob
+        const url = window.URL.createObjectURL(blob);
+        
+        // Crear link temporal para descargar
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Receta_Paciente_${this.appointment.patient.dni}_${Date.now()}.pdf`;
+        
+        // Agregar al DOM, hacer clic y remover
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Limpiar URL
+        window.URL.revokeObjectURL(url);
+        
+        console.log('✅ Receta descargada exitosamente');
+      },
+      error: (err) => {
+        console.error('❌ Error descargando receta:', err);
+        alert('❌ Error al descargar la receta. Intente nuevamente.');
       }
     });
   }

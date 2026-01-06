@@ -1,3 +1,4 @@
+// appointment.routes.js - MODIFICADO
 import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
 import { verifyToken, checkRole } from "../middlewares/auth.middleware.js";
@@ -65,6 +66,7 @@ router.post(
 /**
  * ===========================================
  *   LISTAR CITAS → ADMIN, NURSE, DOCTOR
+ *   ✅ INCLUYE SIGNOS VITALES
  * ===========================================
  */
 router.get(
@@ -75,7 +77,10 @@ router.get(
   async (req, res) => {
     try {
       const appointments = await prisma.appointment.findMany({
-        include: { patient: true },
+        include: { 
+          patient: true,
+          vitalSigns: true  // ⬅️ INCLUIR SIGNOS VITALES
+        },
         orderBy: { date: "asc" },
       });
 
@@ -90,6 +95,7 @@ router.get(
 /**
  * ===========================================
  *   MIS CITAS ASIGNADAS (DOCTOR)
+ *   ✅ INCLUYE SIGNOS VITALES
  * ===========================================
  */
 router.get(
@@ -104,6 +110,15 @@ router.get(
         },
         include: {
           patient: true,
+          vitalSigns: {  // ⬅️ INCLUIR SIGNOS VITALES CON INFO DE ENFERMERA
+            include: {
+              nurse: {
+                select: {
+                  full_name: true
+                }
+              }
+            }
+          }
         },
         orderBy: {
           date: 'asc',
@@ -120,6 +135,7 @@ router.get(
 /**
  * ===========================================
  *   CITAS DEL DÍA → TODOS
+ *   ✅ INCLUYE SIGNOS VITALES
  * ===========================================
  */
 router.get(
@@ -135,7 +151,18 @@ router.get(
 
       const appointments = await prisma.appointment.findMany({
         where: { date: { gte: start, lte: end } },
-        include: { patient: true },
+        include: { 
+          patient: true,
+          vitalSigns: {  // ⬅️ INCLUIR SIGNOS VITALES
+            include: {
+              nurse: {
+                select: {
+                  full_name: true
+                }
+              }
+            }
+          }
+        },
         orderBy: { date: "asc" },
       });
 
@@ -163,7 +190,10 @@ router.get(
 
       const appointments = await prisma.appointment.findMany({
         where: { patient_id: Number(id) },
-        include: { patient: true },
+        include: { 
+          patient: true,
+          vitalSigns: true  // ⬅️ INCLUIR SIGNOS VITALES
+        },
         orderBy: { date: "desc" },
       });
 
@@ -177,6 +207,7 @@ router.get(
 /**
  * ===========================================
  *   OBTENER CITA POR ID → ADMIN, NURSE, DOCTOR
+ *   ✅ INCLUYE SIGNOS VITALES COMPLETOS
  * ===========================================
  */
 router.get(
@@ -191,7 +222,30 @@ router.get(
 
       const appointment = await prisma.appointment.findUnique({
         where: { id: Number(id) },
-        include: { patient: true },
+        include: { 
+          patient: {
+            select: {
+              id: true,
+              dni: true,
+              first_name: true,
+              last_name: true,
+              age: true,
+              phone: true,
+              address: true,
+              antecedents: true
+            }
+          },
+          vitalSigns: {  // ⬅️ INCLUIR SIGNOS VITALES COMPLETOS
+            include: {
+              nurse: {
+                select: {
+                  id: true,
+                  full_name: true
+                }
+              }
+            }
+          }
+        },
       });
 
       if (!appointment) {
@@ -243,13 +297,13 @@ router.put(
 
 /**
  * ===========================================
- *   CAMBIAR ESTADO → ADMIN, NURSE, DOCTOR (✅ AGREGUÉ DOCTOR)
+ *   CAMBIAR ESTADO → ADMIN, NURSE, DOCTOR
  * ===========================================
  */
 router.put(
   "/:id/status",
   verifyToken,
-  checkRole("ADMIN", "NURSE", "DOCTOR"), // ✅ Agregué DOCTOR
+  checkRole("ADMIN", "NURSE", "DOCTOR"),
   validateId,
   validateEnum("status", ["SCHEDULED", "ATTENDED", "CANCELLED"]),
   auditAction("ACTUALIZAR_ESTADO", "APPOINTMENT"),

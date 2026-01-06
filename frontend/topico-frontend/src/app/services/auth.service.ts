@@ -26,8 +26,20 @@ export class AuthService {
     return payload.role;
   }
 
+  getCurrentUser() {
+    const token = this.getToken();
+    if (!token) return null;
+
+    return JSON.parse(atob(token.split('.')[1]));
+  }
+
   hasRole(roles: string[]): boolean {
     const role = this.getUserRole();
     return role ? roles.includes(role) : false;
+  }
+
+  logout() {
+    localStorage.removeItem('token');
+    window.location.href = '/auth';
   }
 }

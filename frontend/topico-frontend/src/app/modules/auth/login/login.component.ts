@@ -15,15 +15,20 @@ export class LoginComponent {
   email = '';
   password = '';
   errorMessage = '';
-  showPassword = false; // ✨ Nueva propiedad
+  showPassword = false;
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {}
 
   login() {
     this.authService.login(this.email, this.password).subscribe({
       next: (response: any) => {
         localStorage.setItem('token', response.token);
-        this.router.navigate(['/dashboard']);
+
+        // ✅ SIEMPRE AL ROOT
+        this.router.navigateByUrl('/');
       },
       error: (err: any) => {
         this.errorMessage = err.error?.error || 'Credenciales incorrectas';
@@ -31,7 +36,6 @@ export class LoginComponent {
     });
   }
 
-  // ✨ Nueva función
   togglePassword() {
     this.showPassword = !this.showPassword;
   }

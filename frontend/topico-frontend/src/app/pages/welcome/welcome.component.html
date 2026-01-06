@@ -1,0 +1,85 @@
+<div class="welcome-container">
+  
+  <!-- Header Principal -->
+  <div class="welcome-header">
+    <div class="header-content">
+      <div class="greeting-section">
+        <h1 class="greeting-title">{{ greeting }}, {{ currentUser?.full_name || 'Usuario' }}! 👋</h1>
+        <p class="greeting-subtitle">
+          <span class="role-badge">{{ getRoleName() }}</span>
+          <span class="time-info">{{ currentTime }}</span>
+        </p>
+      </div>
+      <div class="logo-section">
+        <div class="logo-circle">
+          <span class="logo-icon">🏥</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mensaje de Bienvenida -->
+  <div class="welcome-message">
+    <div class="message-card">
+      <div class="message-icon">✨</div>
+      <h2 class="message-title">Bienvenido al Sistema de Gestión de Tópico M&R</h2>
+      <p class="message-text">
+        Sistema integral para la gestión médica, control de pacientes, citas, 
+        historias clínicas y administración de inventario.
+      </p>
+    </div>
+  </div>
+
+  <!-- Accesos Rápidos -->
+  <div class="quick-access-section">
+    <h3 class="section-title">Accesos Rápidos</h3>
+    <div class="quick-access-grid">
+      <a 
+        *ngFor="let item of getQuickAccess()" 
+        [routerLink]="item.link"
+        class="quick-access-card">
+        <div class="card-icon">{{ item.icon }}</div>
+        <div class="card-content">
+          <h4 class="card-title">{{ item.title }}</h4>
+          <p class="card-description">{{ item.description }}</p>
+        </div>
+        <div class="card-arrow">→</div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Información del Sistema -->
+  <div class="system-info">
+    <div class="info-grid">
+      <div class="info-card">
+        <div class="info-icon">🔒</div>
+        <h4 class="info-title">Seguridad</h4>
+        <p class="info-text">Sistema protegido con encriptación de datos</p>
+      </div>
+      <div class="info-card">
+        <div class="info-icon">⚡</div>
+        <h4 class="info-title">Rendimiento</h4>
+        <p class="info-text">Respuesta rápida y eficiente</p>
+      </div>
+      <div class="info-card">
+        <div class="info-icon">📱</div>
+        <h4 class="info-title">Accesibilidad</h4>
+        <p class="info-text">Disponible desde cualquier dispositivo</p>
+      </div>
+      <div class="info-card">
+        <div class="info-icon">🔄</div>
+        <h4 class="info-title">Actualizado</h4>
+        <p class="info-text">Sistema siempre al día</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="welcome-footer">
+    <p class="footer-text">
+      © 2025 Tópico M&R - Sistema de Gestión Médica
+    </p>
+  </div>
+
+</div>
+

@@ -17,6 +17,8 @@ import alertRoutes from "./routes/alert.routes.js";
 import auditRoutes from "./routes/audit.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import doctorRoutes from './routes/doctor.routes.js';
+import vitalSignsRoutes from './routes/vitalSigns.routes.js';
+
 
 
 const app = express();
@@ -47,6 +49,8 @@ app.use("/api/alerts", alertRoutes);
 app.use("/api/audit", auditRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/doctor", doctorRoutes);
+app.use('/api/vital-signs', vitalSignsRoutes);
+
 
 // ✅ Servidor
 app.listen(3000, () => {

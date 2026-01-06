@@ -45,7 +45,10 @@ export class PatientsComponent implements OnInit {
       }
     });
   }
-
+  // ⬅️ NUEVO: Navegar a historias clínicas
+  viewClinicalHistories(patientId: number) {
+    this.router.navigate(['/clinical-histories', patientId]);
+  }
   // ✅ NUEVA FUNCIÓN: Filtrar pacientes
   onSearch() {
     const term = this.searchTerm.toLowerCase().trim();

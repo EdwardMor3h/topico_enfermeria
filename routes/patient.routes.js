@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
 /**
  * ===========================================
  * 1️⃣ CREAR PACIENTE
- * Solo ADMIN y ENFERMERA pueden registrar
+ * ADMIN | NURSE
  * ===========================================
  */
 router.post(
@@ -19,29 +19,83 @@ router.post(
   auditAction("CREAR", "PATIENT"),
   async (req, res) => {
     try {
-      const { dni, first_name, last_name } = req.body;
+      let {
+        dni,
+        first_name,
+        last_name,
+        age,
+        phone,
+        address,
+        antecedents,
+        date_of_birth,
+        place_of_origin,
+        email
+      } = req.body;
 
-      // Validación mínima
+      // 🧼 LIMPIAR DATOS
+      dni = dni?.trim();
+      first_name = first_name?.trim();
+      last_name = last_name?.trim();
+      phone = phone?.trim() || null;
+      address = address?.trim() || null;
+      antecedents = antecedents?.trim() || null;
+      place_of_origin = place_of_origin?.trim() || null;
+      email = email?.trim() || null;
+
+      // ❌ VALIDACIÓN BÁSICA
       if (!dni || !first_name || !last_name) {
-        return res.status(400).json({ error: "Faltan datos obligatorios" });
+        return res.status(400).json({
+          error: "DNI, nombres y apellidos son obligatorios"
+        });
       }
 
-      // Verificar si existe DNI
+      // ❌ DNI solo números (8 dígitos)
+      if (!/^[0-9]{8}$/.test(dni)) {
+        return res.status(400).json({ error: "DNI inválido" });
+      }
+
+      // ❌ DNI duplicado
       const exists = await prisma.patient.findUnique({
-        where: { dni },
+        where: { dni }
       });
 
       if (exists) {
         return res.status(400).json({ error: "El DNI ya está registrado" });
       }
 
+      // 📅 FECHA SEGURA
+      const parsedDate =
+        date_of_birth && !isNaN(Date.parse(date_of_birth))
+          ? new Date(date_of_birth)
+          : null;
+
+      // 🔢 EDAD SEGURA
+      const parsedAge = Number.isInteger(Number(age))
+        ? Number(age)
+        : null;
+
+      // ✅ CREAR PACIENTE
       const patient = await prisma.patient.create({
-        data: req.body,
+        data: {
+          dni,
+          first_name,
+          last_name,
+          age: parsedAge,
+          phone,
+          address,
+          antecedents,
+          date_of_birth: parsedDate,
+          place_of_origin,
+          email
+        }
       });
 
-      res.json(patient);
+      res.json({
+        message: "Paciente creado exitosamente",
+        data: patient
+      });
     } catch (error) {
-      console.error(error);
+      console.error("Error al crear paciente:", error);
       res.status(500).json({ error: "Error al crear paciente" });
     }
   }
@@ -50,7 +104,6 @@ router.post(
 /**
  * ===========================================
  * 2️⃣ LISTAR PACIENTES
- * Todos los roles pueden ver
  * ADMIN | DOCTOR | NURSE
  * ===========================================
  */
@@ -62,11 +115,13 @@ router.get(
   async (req, res) => {
     try {
       const patients = await prisma.patient.findMany({
-        orderBy: { created_at: "desc" },
+        where: { deleted_at: null },
+        orderBy: { created_at: "desc" }
       });
 
       res.json(patients);
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Error al listar pacientes" });
     }
   }
@@ -74,7 +129,7 @@ router.get(
 
 /**
  * ===========================================
- * 3️⃣ OBTENER UN PACIENTE POR ID
+ * 3️⃣ OBTENER PACIENTE POR ID
  * ===========================================
  */
 router.get(
@@ -85,15 +140,16 @@ router.get(
   async (req, res) => {
     try {
       const patient = await prisma.patient.findUnique({
-        where: { id: Number(req.params.id) },
+        where: { id: Number(req.params.id) }
       });
 
-      if (!patient) {
+      if (!patient || patient.deleted_at) {
         return res.status(404).json({ error: "Paciente no encontrado" });
       }
 
       res.json(patient);
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Error al obtener paciente" });
     }
   }
@@ -102,7 +158,7 @@ router.get(
 /**
  * ===========================================
  * 4️⃣ ACTUALIZAR PACIENTE
- * Solo ADMIN y NURSE
+ * ADMIN | NURSE
  * ===========================================
  */
 router.put(
@@ -112,13 +168,55 @@ router.put(
   auditAction("ACTUALIZAR", "PATIENT"),
   async (req, res) => {
     try {
+      let {
+        dni,
+        first_name,
+        last_name,
+        age,
+        phone,
+        address,
+        antecedents,
+        date_of_birth,
+        place_of_origin,
+        email
+      } = req.body;
+
+      // 🧼 LIMPIAR
+      dni = dni?.trim();
+      first_name = first_name?.trim();
+      last_name = last_name?.trim();
+
+      const parsedAge = Number.isInteger(Number(age))
+        ? Number(age)
+        : null;
+
+      const parsedDate =
+        date_of_birth && !isNaN(Date.parse(date_of_birth))
+          ? new Date(date_of_birth)
+          : null;
+
       const updated = await prisma.patient.update({
         where: { id: Number(req.params.id) },
-        data: req.body,
+        data: {
+          dni,
+          first_name,
+          last_name,
+          age: parsedAge,
+          phone: phone?.trim() || null,
+          address: address?.trim() || null,
+          antecedents: antecedents?.trim() || null,
+          date_of_birth: parsedDate,
+          place_of_origin: place_of_origin?.trim() || null,
+          email: email?.trim() || null
+        }
       });
 
-      res.json(updated);
+      res.json({
+        message: "Paciente actualizado exitosamente",
+        data: updated
+      });
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Error al actualizar paciente" });
     }
   }
@@ -127,7 +225,7 @@ router.put(
 /**
  * ===========================================
  * 5️⃣ ELIMINAR PACIENTE (soft delete)
- * Solo ADMIN
+ * ADMIN
  * ===========================================
  */
 router.delete(
@@ -139,11 +237,12 @@ router.delete(
     try {
       const deleted = await prisma.patient.update({
         where: { id: Number(req.params.id) },
-        data: { deleted_at: new Date() },
+        data: { deleted_at: new Date() }
       });
 
-      res.json({ message: "Paciente eliminado", deleted });
+      res.json({ message: "Paciente eliminado", data: deleted });
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: "Error al eliminar paciente" });
     }
   }

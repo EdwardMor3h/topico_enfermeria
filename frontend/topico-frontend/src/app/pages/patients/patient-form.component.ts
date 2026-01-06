@@ -15,8 +15,8 @@ export class PatientFormComponent implements OnInit {
   form!: FormGroup;
   isEdit = false;
   patientId?: number;
-  loading = false; // ✅ NUEVO: Estado de carga
-  errorMessage = ''; // ✅ NUEVO: Mensajes de error
+  loading = false;
+  errorMessage = '';
 
   constructor(
     private fb: FormBuilder,
@@ -31,7 +31,12 @@ export class PatientFormComponent implements OnInit {
       firstName: ['', [Validators.required, Validators.minLength(2)]],
       lastName: ['', [Validators.required, Validators.minLength(2)]],
       age: ['', [Validators.required, Validators.min(0), Validators.max(120)]],
-      phone: ['', [Validators.minLength(9), Validators.maxLength(9)]]
+      phone: ['', [Validators.minLength(9), Validators.maxLength(9)]],
+      // ⬇️ NUEVOS CAMPOS (sin height/talla)
+      dateOfBirth: [''],
+      placeOfOrigin: [''],
+      email: ['', [Validators.email]],
+      address: ['']
     });
 
     const id = this.route.snapshot.paramMap.get('id');
@@ -43,7 +48,6 @@ export class PatientFormComponent implements OnInit {
     }
   }
 
-  // ✅ NUEVA FUNCIÓN: Cargar paciente
   loadPatient(): void {
     if (!this.patientId) return;
 
@@ -55,7 +59,12 @@ export class PatientFormComponent implements OnInit {
           firstName: p.first_name,
           lastName: p.last_name,
           age: p.age,
-          phone: p.phone
+          phone: p.phone,
+          address: p.address,
+          // ⬇️ NUEVOS CAMPOS (sin height)
+          dateOfBirth: p.date_of_birth ? this.formatDate(p.date_of_birth) : '',
+          placeOfOrigin: p.place_of_origin,
+          email: p.email
         });
         this.loading = false;
       },
@@ -67,7 +76,13 @@ export class PatientFormComponent implements OnInit {
     });
   }
 
-  // ✅ NUEVA FUNCIÓN: Validar campo individual
+  // ✅ NUEVA FUNCIÓN: Formatear fecha para input type="date"
+  formatDate(dateString: string): string {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toISOString().split('T')[0];
+  }
+
   isFieldInvalid(fieldName: string): boolean {
     const field = this.form.get(fieldName);
     return !!(field && field.invalid && field.touched);
@@ -75,7 +90,6 @@ export class PatientFormComponent implements OnInit {
 
   submit() {
     if (this.form.invalid) {
-      // Marcar todos los campos como touched para mostrar errores
       Object.keys(this.form.controls).forEach(key => {
         this.form.get(key)?.markAsTouched();
       });
@@ -93,7 +107,12 @@ export class PatientFormComponent implements OnInit {
       first_name: raw.firstName,
       last_name: raw.lastName,
       age: raw.age,
-      phone: raw.phone
+      phone: raw.phone || null,
+      address: raw.address || null,
+      // ⬇️ NUEVOS CAMPOS (sin height)
+      date_of_birth: raw.dateOfBirth || null,
+      place_of_origin: raw.placeOfOrigin || null,
+      email: raw.email || null
     };
 
     const request = this.isEdit
@@ -116,7 +135,6 @@ export class PatientFormComponent implements OnInit {
     });
   }
 
-  // ✅ NUEVA FUNCIÓN: Volver atrás
   goBack(): void {
     this.router.navigate(['/patients']);
   }

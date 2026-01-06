@@ -1,5 +1,6 @@
 // ------------------------------------------
 // Prisma Schema – Sistema Tópico M&R
+// SOLUCIÓN 2: Con tabla VitalSigns separada
 // ------------------------------------------
 
 generator client {
@@ -23,7 +24,7 @@ model User {
   password_hash String
   role          UserRole @default(DOCTOR)
 
-  signature     String?  // Firma del médico
+  signature     String?
 
   failed_attempts Int       @default(0)
   locked_until    DateTime?
@@ -32,12 +33,11 @@ model User {
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
 
-  // Relaciones
   consultations   Consultation[]
   procedures      ProcedureRecord[]
   clinicalRecords ClinicalHistory[]
-
-  auditLogs AuditLog[]   // ⬅️ RELACIÓN NECESARIA PARA AUDITORÍA
+  vitalSigns      VitalSigns[]      // ⬅️ Enfermera registra signos vitales
+  auditLogs       AuditLog[]
 }
 
 enum UserRole {
@@ -60,6 +60,11 @@ model Patient {
   phone       String?
   address     String?
   antecedents String?
+  
+  // ⬇️ NUEVOS CAMPOS AGREGADOS (sin height, eso va en VitalSigns)
+  date_of_birth   DateTime? // Fecha de nacimiento
+  place_of_origin String?   // Lugar de procedencia
+  email           String?   // Correo electrónico
 
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
@@ -70,6 +75,7 @@ model Patient {
   clinicalHistories ClinicalHistory[]
   procedureRecords  ProcedureRecord[]
   sales             Sale[]
+  vitalSigns        VitalSigns[]
 }
 
 /**
@@ -87,13 +93,48 @@ model Appointment {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  patient Patient @relation(fields: [patient_id], references: [id])
+  patient    Patient      @relation(fields: [patient_id], references: [id])
+  vitalSigns VitalSigns?  // ⬅️ Relación 1:1 con signos vitales
 }
 
 enum AppointmentStatus {
   SCHEDULED
   ATTENDED
   CANCELLED
+}
+
+/**
+ * ===========================
+ * SIGNOS VITALES ⭐ NUEVO
+ * ===========================
+ * Registrados por la enfermera antes de que el doctor atienda
+ */
+model VitalSigns {
+  id             Int      @id @default(autoincrement())
+  appointment_id Int      @unique  // ⬅️ Relación 1:1 con la cita
+  patient_id     Int
+  nurse_id       Int      // Usuario (enfermera) que registró
+
+  blood_pressure    String?  // Ej: "120/80"
+  heart_rate        Int?     // Latidos por minuto
+  respiratory_rate  Int?     // Respiraciones por minuto
+  temperature       Float?   // Grados Celsius
+  weight            Float?   // Kilogramos
+  height            Float?   // Centímetros
+  oxygen_saturation Float?   // SO2 en porcentaje
+
+  observations String?  // Notas adicionales de la enfermera
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  appointment Appointment @relation(fields: [appointment_id], references: [id], onDelete: Cascade)
+  patient     Patient     @relation(fields: [patient_id], references: [id])
+  nurse       User        @relation(fields: [nurse_id], references: [id])
+
+  @@index([appointment_id])
+  @@index([patient_id])
+  @@index([nurse_id])
 }
 
 /**
@@ -137,6 +178,7 @@ model ClinicalHistory {
   respiratory_rate  Int?
   temperature       Float?
   weight            Float?
+  height            Float?    // ⬅️ AGREGAR ESTA LÍNEA
   oxygen_saturation Float?
 
   diagnosis         String?
@@ -224,11 +266,11 @@ model SaleDetail {
 }
 
 enum PaymentMethod {
-  CASH      // Efectivo
-  CARD      // Tarjeta
+  CASH
+  CARD
   YAPE
   PLIN
-  TRANSFER  // Transferencia
+  TRANSFER
 }
 
 /**
@@ -255,7 +297,6 @@ enum AlertLevel {
  * LOGS DE AUDITORÍA
  * ===========================
  */
-
 model AuditLog {
   id        Int      @id @default(autoincrement())
   user_id   Int?

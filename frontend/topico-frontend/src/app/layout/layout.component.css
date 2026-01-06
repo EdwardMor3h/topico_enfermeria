@@ -1,12 +1,15 @@
 .layout {
   display: flex;
-  min-height: 100vh;
+  height: 100vh; /* 🔥 CLAVE */
   background: #f5f7fa;
 }
+
 
 /* SIDEBAR */
 .sidebar {
   width: 260px;
+  height: 100vh; /* ✅ CLAVE */
+
   background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
   color: white;
   padding: 20px;

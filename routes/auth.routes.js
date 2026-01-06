@@ -60,8 +60,14 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ msg: "Contraseña incorrecta" });
     }
 
+    // ✅ TOKEN CON INFORMACIÓN COMPLETA
     const token = jwt.sign(
-      { id: user.id, role: user.role },
+      {
+        id: user.id,
+        full_name: user.full_name,
+        email: user.email,
+        role: user.role
+      },
       process.env.JWT_SECRET,
       { expiresIn: "8h" }
     );
@@ -69,7 +75,16 @@ router.post("/login", async (req, res) => {
     // 🔔 ALERTA DE LOGIN EXITOSO
     await createAlert(`Login exitoso: ${email}`, "INFO");
 
-    res.json({ token, user });
+    // ⚠️ Ya no es obligatorio enviar user, pero lo dejamos por compatibilidad
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        full_name: user.full_name,
+        email: user.email,
+        role: user.role
+      }
+    });
 
   } catch (error) {
     console.error(error);
