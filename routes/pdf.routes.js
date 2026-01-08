@@ -43,22 +43,35 @@ router.get("/clinical-history/:id", async (req, res) => {
       });
     }
 
-    // Crear PDF en tamaño A4
+    // Crear PDF en tamaño A4  
     const doc = new PDFDocument({ 
-      margin: 40, 
+      margin: 0,
       size: 'A4',
-      bufferPages: true,
-      autoFirstPage: false // ⬅️ Evita páginas en blanco
+      bufferPages: false
     });
+    
+    // Sobrescribir addPage para prevenir páginas adicionales
+    const originalAddPage = doc.addPage.bind(doc);
+    let pageCount = 0;
+    doc.addPage = function() {
+      console.log('🚨 INTENTO DE CREAR PÁGINA ADICIONAL - BLOQUEADO');
+      if (pageCount === 0) {
+        pageCount++;
+        return originalAddPage();
+      }
+      // No hacer nada si se intenta agregar más páginas
+      return this;
+    };
+    
+    console.log('✅ PDF Historia Clínica - Configuración aplicada con margin:0 y bufferPages:false');
     
     const fileName = `HC_${history.patient.dni}_${Date.now()}.pdf`;
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    
+    // Stream directo sin pipe intermedio
     doc.pipe(res);
-
-    // Agregar la primera página manualmente
-    doc.addPage();
 
     // ==================== ENCABEZADO CON FONDO CELESTE ====================
     const pageWidth = doc.page.width - 80;
@@ -79,13 +92,13 @@ router.get("/clinical-history/:id", async (req, res) => {
     // Datos de la empresa (a la derecha del logo)
     doc.fontSize(14).font('Helvetica-Bold')
        .fillColor('#FFFFFF')
-       .text('Tópico de Enfermería M&R S.A.C', 130, 30, { align: 'right' });
+       .text('Tópico de Enfermería M&R S.A.C', 130, 30, { align: 'right', width: 425 });
     
     doc.fontSize(9).font('Helvetica')
        .fillColor('#FFFFFF')
-       .text('Calle: Francisco Gonzales Burga N°497', 130, 52, { align: 'right' })
-       .text('Pueblo Nuevo-Ferreñafe', 130, 67, { align: 'right' })
-       .text('Celular: 916423945', 130, 82, { align: 'right' });
+       .text('Calle: Francisco Gonzales Burga N°497', 130, 52, { align: 'right', width: 425 })
+       .text('Pueblo Nuevo-Ferreñafe', 130, 67, { align: 'right', width: 425 })
+       .text('Celular: 916423945', 130, 82, { align: 'right', width: 425 });
     
     // Título "HISTORIA CLÍNICA" con fondo blanco
     doc.rect(40, 130, 515, 50).fill('#FFFFFF');
@@ -151,7 +164,7 @@ router.get("/clinical-history/:id", async (req, res) => {
        .font('Helvetica')
        .text(history.patient.email || '___________________');
     
-    yPos += 25;
+    yPos += 15;
 
     // ==================== ANAMNESIS (SIGNOS VITALES) ====================
     // Caja con fondo celeste claro
@@ -217,7 +230,7 @@ router.get("/clinical-history/:id", async (req, res) => {
     doc.fontSize(8).font('Helvetica')
        .text(`Fecha: ${new Date(history.created_at).toLocaleDateString('es-PE')}`, 450, yPos);
     
-    yPos += 25;
+    yPos += 15;
 
     // ==================== DIAGNÓSTICO ====================
     // Caja con fondo celeste claro
@@ -229,14 +242,17 @@ router.get("/clinical-history/:id", async (req, res) => {
     
     yPos += 35;
     
-    doc.fontSize(10).font('Helvetica')
+    doc.fontSize(9).font('Helvetica')
        .fillColor('#000000')
        .text(history.diagnosis || 'No especificado', 45, yPos, { 
          width: 500, 
-         align: 'justify' 
+         align: 'justify',
+         lineGap: 2,
+         height: 60,
+         ellipsis: true
        });
     
-    yPos = doc.y + 20;
+    yPos += 70; // Fijo en lugar de doc.y
     
     // ==================== TRATAMIENTO ====================
     // Caja con fondo celeste claro
@@ -248,14 +264,17 @@ router.get("/clinical-history/:id", async (req, res) => {
     
     yPos += 35;
     
-    doc.fontSize(10).font('Helvetica')
+    doc.fontSize(9).font('Helvetica')
        .fillColor('#000000')
        .text(history.consultation.treatment || 'No especificado', 45, yPos, { 
          width: 500, 
-         align: 'justify' 
+         align: 'justify',
+         lineGap: 2,
+         height: 60,
+         ellipsis: true
        });
     
-    yPos = doc.y + 20;
+    yPos += 70; // Fijo en lugar de doc.y
     
     // ==================== OBSERVACIONES ====================
     if (history.consultation.observations) {
@@ -268,26 +287,23 @@ router.get("/clinical-history/:id", async (req, res) => {
       
       yPos += 35;
       
-      doc.fontSize(10).font('Helvetica')
+      doc.fontSize(9).font('Helvetica')
          .fillColor('#000000')
          .text(history.consultation.observations, 45, yPos, { 
            width: 500, 
-           align: 'justify' 
+           align: 'justify',
+           lineGap: 2,
+           height: 50,
+           ellipsis: true
          });
       
-      yPos = doc.y + 20;
+      yPos += 60; // Fijo en lugar de doc.y
     }
     
-    yPos += 10;
+    yPos += 5;
 
     // ==================== FIRMA ====================
-    // Asegurar espacio suficiente para la firma
-    if (yPos > 650) {
-      doc.addPage();
-      yPos = 50;
-    }
-    
-    yPos += 40;
+    yPos += 20;
     
     if (history.medical_signature) {
       try {
@@ -314,20 +330,14 @@ router.get("/clinical-history/:id", async (req, res) => {
        .text(`Fecha: ${new Date(history.created_at).toLocaleDateString('es-PE')}`, 350, yPos, { width: 150, align: 'center' });
 
     // ==================== PIE DE PÁGINA CON FONDO CELESTE ====================
-    // Obtener el número total de páginas
-    const range = doc.bufferedPageRange();
-    for (let i = 0; i < range.count; i++) {
-      doc.switchToPage(i);
-      
-      const footerY = doc.page.height - 40;
-      
-      // Franja celeste inferior
-      doc.rect(0, footerY, doc.page.width, 40).fill('#4A90E2');
-      
-      doc.fontSize(9).font('Helvetica')
-         .fillColor('#FFFFFF')
-         .text('Correo: topicodeenfermeriamr@gmail.com', 40, footerY + 15, { align: 'left' });
-    }
+    const footerY = doc.page.height - 40;
+    
+    // Franja celeste inferior
+    doc.rect(0, footerY, doc.page.width, 40).fill('#4A90E2');
+    
+    doc.fontSize(9).font('Helvetica')
+       .fillColor('#FFFFFF')
+       .text('Correo: topicodeenfermeriamr@gmail.com', 40, footerY + 15, { align: 'left' });
 
     doc.end();
 
@@ -360,8 +370,8 @@ router.get("/prescription/:consultationId", async (req, res) => {
     const doc = new PDFDocument({
       size: "A4",
       margin: 40,
-      autoFirstPage: false,
-      bufferPages: false,
+      autoFirstPage: true,
+      bufferPages: true,
     });
 
     res.setHeader("Content-Type", "application/pdf");
@@ -371,7 +381,6 @@ router.get("/prescription/:consultationId", async (req, res) => {
     );
 
     doc.pipe(res);
-    doc.addPage();
 
     const azul = "#2F5597";
 
